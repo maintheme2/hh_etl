@@ -5,7 +5,6 @@ import os
 
 url = 'https://api.hh.ru/vacancies'
 
-# get your user agent and change it
 header = {
     'User-Agent': str(UserAgent().random)
 }

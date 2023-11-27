@@ -3,27 +3,17 @@ from sqlalchemy import create_engine
 import pandas as pd
 from sqlalchemy.engine import URL
 
-df = pd.read_csv('transformed.csv')
+from airflow.decorators import task
 
-db_name = input("Enter the name of the database to connect: ")
-db_user = input("Enter your username for the database: ")
-db_password = input("Enter your password for the database: ")
+@task(task_id='load_data')
+def load(**kwargs):
+    df = kwargs['df']
+    db_name = kwargs['db_name']
+    db_user = kwargs['db_user']
+    db_password = kwargs['db_password']
 
-con = psycopg2.connect(
-    host="localhost",
-    database=db_name,
-    user=db_user,
-    password=db_password
-)
+    url = URL.create(drivername="postgresql", username=db_user, password=db_password, host="localhost", database=db_name)
 
-cur = con.cursor()
+    engine = create_engine(url)
 
-url = URL.create("postgresql", username=db_user, password=db_password, host="localhost", database=db_name)
-
-engine = create_engine(url)
-
-df.to_sql('vacancies', con=engine, if_exists='replace', index=False)
-
-if con:
-    cur.close()
-    con.close()
+    df.to_sql('vacancies', con=engine, if_exists='replace', index=False)

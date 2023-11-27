@@ -3,8 +3,12 @@ import pandas as pd
 from fake_useragent import UserAgent
 import os
 
+from airflow.decorators import task
+
 @task(task_id='extract_data')
-def extract(job_titles: list[str], number_of_pages = 50):
+def extract(**kwargs):
+    job_titles = kwargs['job_titles']
+    number_of_pages = kwargs['number_of_pages']
     """
     :param job_titles: list of job titles or keywords e.g. ['postgreSQL', 'data engineer'].
     :param number_of_pages: number of pages to be retrieved, reduce this if you want faster retrieval but be aware that for small number of pages some features will be missing.

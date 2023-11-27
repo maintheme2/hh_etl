@@ -1,15 +1,10 @@
-import requests
-import pandas as pd
-from fake_useragent import UserAgent
-import os
-
-from etl.extract import extract
-from etl.load import load 
-
 from airflow import DAG
 from datetime import datetime
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
+
+from etl.extract import extract
+from etl.load import load 
 
 with DAG(
     'etl',

@@ -1,10 +1,14 @@
-from airflow import DAG
+import requests
+import os
+import sys
+import pandas as pd
 from datetime import datetime
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
 
-from etl.extract import extract
-from etl.load import load 
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+from airflow.operators.bash import BashOperator
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 with DAG(
     'etl',

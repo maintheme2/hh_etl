@@ -1,6 +1,5 @@
 import requests
 import pandas as pd
-from fake_useragent import UserAgent
 import os
 
 from airflow.decorators import task

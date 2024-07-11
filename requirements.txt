@@ -1,0 +1,6 @@
+Flask_AppBuilder==4.5.0
+nltk==3.8.1
+pandas==2.1.4
+psycopg2_binary==2.9.9
+Requests==2.32.3
+SQLAlchemy==1.4.52

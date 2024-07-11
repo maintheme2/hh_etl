@@ -7,13 +7,8 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 
-from airflow.decorators import task
 
-
-@task(task_id='extract_data')
-def extract(**kwargs):
-    job_titles = kwargs['job_titles']
-    number_of_pages = kwargs['number_of_pages']
+def extract(job_titles: list, number_of_pages: int):
     """
     :param job_titles: list of job titles or keywords e.g. ['postgreSQL', 'data engineer'].
     :param number_of_pages: number of pages to be retrieved, reduce this if you want faster retrieval 
@@ -36,26 +31,36 @@ def extract(**kwargs):
                 for j in range(len(data[i]['items'])):
                     df.loc[ind] = data[i]['items'][j]
                     ind+=1
+        csv_name = job+".csv"
+        if not os.path.exists('./data'):
+            os.mkdir('./data')
+        df.to_csv('./data/input/'+csv_name)
 
-    return df    
+def transform(path: str):
 
-@task(task_id='transform_data')
-def transform(df: pd.DataFrame):
+    df = pd.concat((pd.read_csv(path + '/input/' + f) for f in os.listdir(path + '/input/')), ignore_index=True)
+
     # Choose the type of the work that you want to see according to the following mapping:
     #    "{'id': 'probation', 'name': 'Стажировка'}",
     #    "{'id': 'full', 'name': 'Полная занятость'}",
     #    "{'id': 'part', 'name': 'Частичная занятость'}",
     #    "{'id': 'project', 'name': 'Проектная работа'}"], 
+
     for arr in df['employment']: 
-        if (eval(arr)['id']) != 'probation':
-            df.drop(df[df['employment'] == arr].index, inplace=True)
+        if '{' in arr:
+            if (eval(arr)['id']) not in ['full', 'project']:  
+                df.drop(df[df['employment'] == arr].index, inplace=True)
+        else:
+            if arr not in ['Полная занятость', 'Проектная работа']:
+                df.drop(df[df['employment'] == arr].index, inplace=True)
 
     # Optimize this for your needs, i.e. provide some words that you 
     # don't want to see in the name of the vacancy
     for name in df['name']:
         for word in nltk.tokenize.wordpunct_tokenize(name):
-            if word.lower() in ['java', 'php', 'qa', 'backend', 'back-end', 'frontend', 'front-end', 'full-stack',
-                                'fullstack' ,'c#', 'devops']:
+            if word.lower() in ['java', 'php', 'qa', 'backend', 'back-end', 'back', 'frontend', 'front-end', 
+                                'full-stack', 'devops', 'CTO', 'System Administrator', 'Администратор',
+                                'fullstack' ,'c#', 'стажер-', 'стажировка', 'стажер', 'стажировка']:
                 df.drop(df[df['name'] == name].index, inplace=True)
 
     df.dropna(axis=1, how='all', inplace=True)
@@ -85,18 +90,19 @@ def transform(df: pd.DataFrame):
             df = df.assign(responsibility=df.snippet.apply(lambda x: eval(x)['responsibility'] if x != 'null' else x))
             df.drop(columns=['snippet'], inplace=True)
         
-    return df
+    print(df.head())
+    df.to_csv(path + '/output/transformed.csv', index=False)
 
 
-@task(task_id='load_data')
 def load(**kwargs):
-    df = kwargs['df']
+    df = pd.read_csv(kwargs['df'])
     db_name = kwargs['db_name']
     db_user = kwargs['db_user']
     db_password = kwargs['db_password']
 
-    url = URL.create(drivername="postgresql", username=db_user, password=db_password, host="localhost", database=db_name)
+    url = URL.create(drivername="postgresql", username="postgres", password="postgres", host="localhost", database="vacancies", port=5432)
 
     engine = create_engine(url)
 
-    df.to_sql('vacancies', con=engine, if_exists='replace', index=False)
+    with engine.connect() as conn:
+        df.to_sql(name='vacancies', con=conn, if_exists='replace', index=False)

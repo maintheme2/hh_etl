@@ -4,7 +4,7 @@ An ETL process designed to parse the vacancies from russian hh.ru website and lo
 
 ## Architecture :gear:
 
-![etl](./etl.png)
+![etl](./assets/etl.png)
 
 ### Notes :pencil:
 * <b>pandas</b> == 2.1.4 :panda_face:
